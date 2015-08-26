@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <array name="pref_country_code_entries">
+        <item>Estados Unidos</item>
+        <item>Costa Rica</item>
+    </array>
+
+    <array name="pref_country_code_entries_values">
+        <item>US</item>
+        <item>CR</item>
+    </array>
+
+</resources>
