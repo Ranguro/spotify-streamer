@@ -144,9 +144,9 @@ public class TopTracksActivityFragment extends Fragment {
             else{
                 Toast.makeText(getActivity(), getResources().getString(R.string.toast_error_found), Toast.LENGTH_SHORT).show();
             }
-
-
         }
+
+
 
     }
 

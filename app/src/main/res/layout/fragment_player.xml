@@ -95,7 +95,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:tint="@color/content_color"
-            android:src="@android:drawable/ic_media_play"
+            android:src="@android:drawable/ic_media_pause"
             android:contentDescription="@string/content_desc_play_track" />
 
         <ImageButton

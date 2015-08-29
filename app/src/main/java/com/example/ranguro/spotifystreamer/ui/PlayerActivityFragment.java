@@ -74,20 +74,15 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
 
     }
 
-
-
     static PlayerActivityFragment newInstance(ArrayList<ParcelableSpotifyTrack> topTracksList, int position) {
         PlayerActivityFragment playerActivityFragment = new PlayerActivityFragment();
 
-        // Supply num input as an argument.
         Bundle args = new Bundle();
         args.putParcelableArrayList(KEY_TRACK, topTracksList);
         args.putInt(KEY_CURRENT_POSITION, position);
         playerActivityFragment.setArguments(args);
         return playerActivityFragment;
     }
-
-
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -97,9 +92,10 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
         intent = new Intent(BROADCAST_SEEKBAR);
         if(playbackIntent==null){
             playbackIntent = new Intent(getActivity(), PlaybackService.class);
+            playbackIntent.putParcelableArrayListExtra("playlist", spotifyTrackList);
+            playbackIntent.putExtra("position", currentPosition);
             getActivity().bindService(playbackIntent, playbackConnection, Context.BIND_AUTO_CREATE);
             playbackIntent.setAction(PlaybackService.ACTION_PLAY);
-            getActivity().startService(playbackIntent);
         }
 
     }
@@ -115,11 +111,14 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
             playbackService.setPlaylist(spotifyTrackList);
             playbackService.setPosition(currentPosition);
             playbackBound = true;
+            getActivity().registerReceiver(broadcastReceiver, new IntentFilter(
+                    PlaybackService.BROADCAST_ACTION));
+            broadcastIsRegistered=true;
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-            //getActivity().unregisterReceiver(broadcastReceiver);
+            getActivity().unregisterReceiver(broadcastReceiver);
             broadcastIsRegistered = false;
             playbackBound = false;
         }
@@ -143,8 +142,6 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
         playPreviousTrackBtn = (ImageButton) rootView.findViewById(R.id.play_previous_track_btn);
         playTrackBtn = (ImageButton) rootView.findViewById(R.id.play_track_btn);
         playNextTrackBtn = (ImageButton) rootView.findViewById(R.id.play_next_track_btn);
-
-
 
         trackProgress.setOnSeekBarChangeListener(this);
 
@@ -172,6 +169,13 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
             }
         });
 
+        getActivity().registerReceiver(broadcastReceiver, new IntentFilter(
+                PlaybackService.BROADCAST_ACTION));
+        broadcastIsRegistered = true;
+        getActivity().startService(playbackIntent);
+        trackIsPaused = false;
+        playTrackBtn.setImageResource(android.R.drawable.ic_media_pause);
+
 
         return rootView;
     }
@@ -180,8 +184,6 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
     @Override
     public void onPause() {
         super.onPause();
-        getActivity().unregisterReceiver(broadcastReceiver);
-        broadcastIsRegistered = false;
     }
 
     @Override
@@ -288,24 +290,29 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
             trackIsPaused = true;
         }
     }
-
     private void playNextTrack(){
 
         if(currentPosition < spotifyTrackList.size()-1){
             currentPosition += 1;
         }
-        updatePlayerScreen();
         trackIsPaused = true;
-        stopPlayerService();
         playbackService.stopTrack();
         playbackService.setPosition(currentPosition);
+        getActivity().unregisterReceiver(broadcastReceiver);
+        broadcastIsRegistered = false;
+        updatePlayerScreen();
     }
 
 
 
     @Override
     public void onDestroy() {
+
         super.onDestroy();
+        if  (broadcastIsRegistered){
+            getActivity().unregisterReceiver(broadcastReceiver);
+            broadcastIsRegistered = true;
+        }
     }
 
     @Override

@@ -59,7 +59,6 @@ public class PlaybackService extends Service implements
     private final Handler handler = new Handler();
     public static final String BROADCAST_ACTION = "com.example.ranguro.spotifystreamer.seekprogress";
 
-    public static boolean mediaPrepared;
     public static boolean trackEnded;
 
     public static final String ACTION_PLAY = "action_play";
@@ -97,6 +96,9 @@ public class PlaybackService extends Service implements
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+
+        mediaPlayer.reset();
+
         if (mediaManager == null){
             initMediaSessions();
         }
@@ -104,6 +106,12 @@ public class PlaybackService extends Service implements
         //Register
         registerReceiver(seekbarReceiver, new IntentFilter(PlayerActivityFragment.BROADCAST_SEEKBAR));
 
+
+
+        playlist = intent.getParcelableArrayListExtra("playlist");
+        playlistPosition = intent.getIntExtra("position",0);
+
+        playTrack();
 
         return super.onStartCommand(intent, flags, startId);
     }
@@ -116,7 +124,7 @@ public class PlaybackService extends Service implements
             @Override
             public void onPlay() {
                 super.onPlay();
-                mediaPlayer.start();
+                //mediaPlayer.start();
                 buildNotification(generateAction(android.R.drawable.ic_media_pause, "Pause", ACTION_PAUSE));
             }
 
@@ -124,7 +132,6 @@ public class PlaybackService extends Service implements
             public void onSkipToNext() {
                 super.onSkipToNext();
                 mediaPlayer.stop();
-
                 buildNotification(generateAction(android.R.drawable.ic_media_next, "Next", ACTION_NEXT));
             }
 
@@ -223,6 +230,7 @@ public class PlaybackService extends Service implements
 
         mediaPlayer.reset();
 
+
         // Set up the MediaPlayer data source using the strAudioLink value
         if (!mediaPlayer.isPlaying()) {
             ParcelableSpotifyTrack track = playlist.get(playlistPosition);
@@ -234,7 +242,6 @@ public class PlaybackService extends Service implements
                 Log.e("MUSIC SERVICE", "Error setting data source", e);
             }
             mediaPlayer.prepareAsync();
-            mediaPrepared = true;
         }
         setUpHandler();
     }
