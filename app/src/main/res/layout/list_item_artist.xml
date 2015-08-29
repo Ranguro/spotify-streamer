@@ -13,20 +13,15 @@
         android:layout_width="50dp"
         android:layout_height="50dp"/>
 
-    <LinearLayout
+
+    <TextView
+        android:text="Artist name"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:orientation="vertical"
-        android:paddingLeft="16dp">
+        android:paddingLeft="16dp"
+        android:id="@+id/list_item_artist"
+        android:textColor="@color/content_color" />
 
-        <TextView
-            android:text="Artist name"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/list_item_artist"
-            android:textColor="@color/content_color" />
-
-    </LinearLayout>
 
 </LinearLayout>

@@ -113,7 +113,7 @@ public class PlaybackService extends Service implements
 
         playTrack();
 
-        return super.onStartCommand(intent, flags, startId);
+        return START_STICKY;
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
@@ -249,15 +249,10 @@ public class PlaybackService extends Service implements
     public void stopTrack()
     {
         if (mediaPlayer.isPlaying()){
-            mediaPlayer.reset();
             mediaPlayer.stop();
         }
     }
 
-
-    public void playNextTrack(){
-
-    }
 
 
 
@@ -337,11 +332,6 @@ public class PlaybackService extends Service implements
 
     }
 
-//    private void resetButtonPlayStopBroadcast() {
-//        bufferIntent.putExtra("buffering", "2");
-//        sendBroadcast(bufferIntent);
-//    }
-
     @Override
     public boolean onError(MediaPlayer mediaPlayer, int what, int extra) {
         mediaPlayer.reset();
@@ -372,7 +362,7 @@ public class PlaybackService extends Service implements
     @Override
     public void onSeekComplete(MediaPlayer mp) {
 
-        if (!mediaPlayer.isPlaying());{
+        if (!mediaPlayer.isPlaying()){
             mediaPlayer.start();
         }
 
@@ -406,8 +396,7 @@ public class PlaybackService extends Service implements
             connection.setDoInput(true);
             connection.connect();
             InputStream input = connection.getInputStream();
-            Bitmap myBitmap = BitmapFactory.decodeStream(input);
-            return myBitmap;
+            return BitmapFactory.decodeStream(input);
         } catch (IOException e) {
             // Log exception
             return null;
