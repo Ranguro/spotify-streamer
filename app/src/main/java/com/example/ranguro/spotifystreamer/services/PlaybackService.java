@@ -9,15 +9,12 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.session.MediaController;
 import android.media.session.MediaSession;
 import android.media.session.MediaSessionManager;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
@@ -28,10 +25,6 @@ import android.util.Log;
 import com.example.ranguro.spotifystreamer.classes.ParcelableSpotifyTrack;
 import com.example.ranguro.spotifystreamer.ui.PlayerActivityFragment;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
 
 /**
@@ -97,21 +90,22 @@ public class PlaybackService extends Service implements
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
-        mediaPlayer.reset();
+        if(!mediaPlayer.isPlaying()) {
+            if (mediaManager == null) {
+                initMediaSessions();
+            }
+            handleMediaIntent(intent);
+            //Register
+            registerReceiver(seekbarReceiver, new IntentFilter(PlayerActivityFragment.BROADCAST_SEEKBAR));
 
-        if (mediaManager == null){
-            initMediaSessions();
+
+            playlist = intent.getParcelableArrayListExtra("playlist");
+            playlistPosition = intent.getIntExtra("position", 0);
+
+            playTrack();
         }
-        handleMediaIntent(intent);
-        //Register
-        registerReceiver(seekbarReceiver, new IntentFilter(PlayerActivityFragment.BROADCAST_SEEKBAR));
 
-
-
-        playlist = intent.getParcelableArrayListExtra("playlist");
-        playlistPosition = intent.getIntExtra("position",0);
-
-        playTrack();
+        setUpHandler();
 
         return START_STICKY;
     }
@@ -310,10 +304,8 @@ public class PlaybackService extends Service implements
 
     @Override
     public IBinder onBind(Intent intent) {
-        setUpHandler();
         return musicBind;
     }
-
 
 
     @Override
@@ -377,34 +369,6 @@ public class PlaybackService extends Service implements
         String ns = Context.NOTIFICATION_SERVICE;
         NotificationManager notificationManager = (NotificationManager) getSystemService(ns);
         notificationManager.cancel(NOTIFY_ID);
-    }
-
-    public static Bitmap getBitmapFromURL(String src) {
-        try {
-            URL url = new URL(src);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setDoInput(true);
-            connection.connect();
-            InputStream input = connection.getInputStream();
-            return BitmapFactory.decodeStream(input);
-        } catch (IOException e) {
-            // Log exception
-            return null;
-        }
-    }
-
-    public class UrlToImageTask extends AsyncTask<String,Void,Bitmap>{
-
-        @Override
-        protected Bitmap doInBackground(String...url) {
-
-            return getBitmapFromURL(url[0]);
-        }
-
-        @Override
-        protected void onPostExecute(Bitmap bitmap) {
-
-        }
     }
 
 }

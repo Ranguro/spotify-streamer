@@ -87,42 +87,36 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
     }
 
 
+    @Override
+    public void onStart() {
+        super.onStart();
+        intent = new Intent(BROADCAST_SEEKBAR);
+        playbackIntent = new Intent(getActivity(), PlaybackService.class);
+        playbackIntent.putParcelableArrayListExtra("playlist", spotifyTrackList);
+        playbackIntent.putExtra("position", currentPosition);
+        getActivity().startService(playbackIntent);
+        getActivity().bindService(playbackIntent, playbackConnection, Context.BIND_AUTO_CREATE);
+
+
+    }
+
+
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         spotifyTrackList = getArguments().getParcelableArrayList(KEY_TRACK);
-        currentPosition = getArguments().getInt(KEY_CURRENT_POSITION);
-        intent = new Intent(BROADCAST_SEEKBAR);
-
-        if(playbackIntent==null){
-            playbackIntent = new Intent(getActivity(), PlaybackService.class);
-            playbackIntent.putParcelableArrayListExtra("playlist", spotifyTrackList);
-            playbackIntent.putExtra("position", currentPosition);
-
-            if (savedInstanceState == null) {
-                getActivity().startService(playbackIntent);
-                getActivity().bindService(playbackIntent, playbackConnection, Context.BIND_AUTO_CREATE);
-
-                //**Snippet for notifications media player.
-                //playbackIntent.setAction(PlaybackService.ACTION_PLAY);
-            }
-            else{
-                getActivity().bindService(playbackIntent, playbackConnection, Context.BIND_AUTO_CREATE);
-                getActivity().registerReceiver(broadcastReceiver, new IntentFilter(
-                        PlaybackService.BROADCAST_ACTION));
-            }
+        if (savedInstanceState == null){
+            currentPosition = getArguments().getInt(KEY_CURRENT_POSITION);
+        }else{
+            currentPosition = savedInstanceState.getInt("playlist_position");
         }
-
     }
-
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
-        outState.putInt("track_position", trackProgress.getProgress());
-        outState.putBoolean("track_state", trackIsPaused);
-        outState.putString("duration_progress", (String) startDuration.getText());
         super.onSaveInstanceState(outState);
+        outState.putInt("playlist_position",currentPosition);
     }
 
     //connect to the service
@@ -155,7 +149,6 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-
         final View rootView = inflater.inflate(R.layout.fragment_player, container, false);
 
         spotifyTrack = spotifyTrackList.get(currentPosition);
@@ -198,13 +191,6 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
         });
 
 
-
-        if(!broadcastIsRegistered){
-            getActivity().registerReceiver(broadcastReceiver, new IntentFilter(
-                    PlaybackService.BROADCAST_ACTION));
-            broadcastIsRegistered = true;
-        }
-
         trackIsPaused = false;
         playTrackBtn.setImageResource(android.R.drawable.ic_media_pause);
 
@@ -223,15 +209,6 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
         }
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-        if (!broadcastIsRegistered){
-            getActivity().registerReceiver(broadcastReceiver, new IntentFilter(
-                    PlaybackService.BROADCAST_ACTION));
-            broadcastIsRegistered = true;
-        }
-    }
 
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
         @Override
@@ -292,19 +269,18 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
         trackName.setText(spotifyTrack.name);
         trackProgress.setProgress(0);
         startDuration.setText("0:00");
-        playTrackBtn.setImageResource(android.R.drawable.ic_media_play);
+        playTrackBtn.setImageResource(android.R.drawable.ic_media_pause);
     }
 
     private void playPreviousTrack() {
+        playbackService.stopTrack();
 
         if(currentPosition != 0){
             currentPosition -= 1;
         }
         updatePlayerScreen();
-        trackIsPaused = true;
-        stopPlayerService();
-        playbackService.stopTrack();
         playbackService.setPosition(currentPosition);
+        playbackService.playTrack();
     }
 
 
@@ -332,33 +308,29 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
             trackIsPaused = true;
         }
     }
-    private void playNextTrack(){
-
+    private void playNextTrack() {
+        playbackService.stopTrack();
         if(currentPosition < spotifyTrackList.size()-1){
             currentPosition += 1;
         }
         trackIsPaused = true;
-        playbackService.stopTrack();
         playbackService.setPosition(currentPosition);
-        if (broadcastIsRegistered) {
-            getActivity().unregisterReceiver(broadcastReceiver);
-            broadcastIsRegistered = false;
-        }
         updatePlayerScreen();
+        playbackService.playTrack();
     }
 
 
 
-    @Override
-    public void onDestroy() {
-
-        super.onDestroy();
-        if  (broadcastIsRegistered){
-            getActivity().unregisterReceiver(broadcastReceiver);
-            getActivity().unbindService(playbackConnection);
-            broadcastIsRegistered = false;
-        }
-    }
+//    @Override
+//    public void onDestroy() {
+//
+//        super.onDestroy();
+//        if  (broadcastIsRegistered){
+//            getActivity().unregisterReceiver(broadcastReceiver);
+//            getActivity().unbindService(playbackConnection);
+//            broadcastIsRegistered = false;
+//        }
+//    }
 
 
 
