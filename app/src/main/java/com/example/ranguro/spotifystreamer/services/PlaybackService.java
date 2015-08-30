@@ -196,7 +196,7 @@ public class PlaybackService extends Service implements
         style.setShowActionsInCompactView(0, 1, 2);
 
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.notify(1,builder.build());
+        notificationManager.notify(1, builder.build());
     }
 
 
@@ -282,8 +282,8 @@ public class PlaybackService extends Service implements
 
     @Override
     public boolean onUnbind(Intent intent) {
-        mediaPlayer.stop();
-        mediaPlayer.release();
+
+        handler.removeCallbacks(sendUpdatesToUI);
         mediaSession.release();
         return super.onUnbind(intent);
 
@@ -300,24 +300,17 @@ public class PlaybackService extends Service implements
     @Override
     public void onDestroy() {
         super.onDestroy();
-
-        if (mediaPlayer != null){
-            if(mediaPlayer.isPlaying()) {
-                mediaPlayer.stop();
-            }
-            mediaPlayer.release();
-        }
-
-        stopForeground(true);
-
-        unregisterReceiver(seekbarReceiver);
-
-
         handler.removeCallbacks(sendUpdatesToUI);
+        if (mediaPlayer.isPlaying()){
+            mediaPlayer.stop();
+        }
+        mediaPlayer.release();
+        unregisterReceiver(seekbarReceiver);
     }
 
     @Override
     public IBinder onBind(Intent intent) {
+        setUpHandler();
         return musicBind;
     }
 
@@ -325,11 +318,7 @@ public class PlaybackService extends Service implements
 
     @Override
     public void onCompletion(MediaPlayer mediaPlayer) {
-        //resetButtonPlayStopBroadcast();
-        trackEnded = true;
-        stopTrack();
         stopSelf();
-
     }
 
     @Override
@@ -351,7 +340,8 @@ public class PlaybackService extends Service implements
 
     }
 
-    public void resume() {
+    public void resume(int progress) {
+        mediaPlayer.seekTo(progress);
         mediaPlayer.start();
     }
 

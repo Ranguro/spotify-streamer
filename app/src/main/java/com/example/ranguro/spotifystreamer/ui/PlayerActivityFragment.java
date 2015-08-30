@@ -40,7 +40,8 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
     private Intent playbackIntent;
     private Intent intent;
 
-    private boolean broadcastIsRegistered ;
+    private boolean broadcastIsRegistered;
+
 
     @Override
     public void show(FragmentManager manager, String tag) {
@@ -72,6 +73,7 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
 
     public PlayerActivityFragment() {
 
+
     }
 
     static PlayerActivityFragment newInstance(ArrayList<ParcelableSpotifyTrack> topTracksList, int position) {
@@ -84,22 +86,44 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
         return playerActivityFragment;
     }
 
+
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         spotifyTrackList = getArguments().getParcelableArrayList(KEY_TRACK);
         currentPosition = getArguments().getInt(KEY_CURRENT_POSITION);
         intent = new Intent(BROADCAST_SEEKBAR);
+
         if(playbackIntent==null){
             playbackIntent = new Intent(getActivity(), PlaybackService.class);
             playbackIntent.putParcelableArrayListExtra("playlist", spotifyTrackList);
             playbackIntent.putExtra("position", currentPosition);
-            getActivity().bindService(playbackIntent, playbackConnection, Context.BIND_AUTO_CREATE);
-            playbackIntent.setAction(PlaybackService.ACTION_PLAY);
+
+            if (savedInstanceState == null) {
+                getActivity().startService(playbackIntent);
+                getActivity().bindService(playbackIntent, playbackConnection, Context.BIND_AUTO_CREATE);
+
+                //**Snippet for notifications media player.
+                //playbackIntent.setAction(PlaybackService.ACTION_PLAY);
+            }
+            else{
+                getActivity().bindService(playbackIntent, playbackConnection, Context.BIND_AUTO_CREATE);
+                getActivity().registerReceiver(broadcastReceiver, new IntentFilter(
+                        PlaybackService.BROADCAST_ACTION));
+            }
         }
 
     }
 
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        outState.putInt("track_position", trackProgress.getProgress());
+        outState.putBoolean("track_state", trackIsPaused);
+        outState.putString("duration_progress", (String) startDuration.getText());
+        super.onSaveInstanceState(outState);
+    }
 
     //connect to the service
     private ServiceConnection playbackConnection = new ServiceConnection(){
@@ -125,6 +149,8 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
             playbackBound = false;
         }
     };
+
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -178,7 +204,7 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
                     PlaybackService.BROADCAST_ACTION));
             broadcastIsRegistered = true;
         }
-        getActivity().startService(playbackIntent);
+
         trackIsPaused = false;
         playTrackBtn.setImageResource(android.R.drawable.ic_media_pause);
 
@@ -190,15 +216,20 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
     @Override
     public void onPause() {
         super.onPause();
+        if (broadcastIsRegistered){
+            getActivity().unbindService(playbackConnection);
+            getActivity().unregisterReceiver(broadcastReceiver);
+            broadcastIsRegistered = false;
+        }
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        if (broadcastIsRegistered){
+        if (!broadcastIsRegistered){
             getActivity().registerReceiver(broadcastReceiver, new IntentFilter(
                     PlaybackService.BROADCAST_ACTION));
-            broadcastIsRegistered = false;
+            broadcastIsRegistered = true;
         }
     }
 
@@ -217,8 +248,9 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
         int seekProgress = Integer.parseInt(counter);
 
         startDuration.setText(getTimeString(seekProgress));
-        trackProgress.setMax(maxDuration);
         trackProgress.setProgress(seekProgress);
+        trackProgress.setMax(maxDuration);
+
 
     }
 
@@ -281,7 +313,7 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
         if (trackIsPaused){
             if (trackProgress.getProgress() != 0){
                 playTrackBtn.setImageResource(android.R.drawable.ic_media_pause);
-                playbackService.resume();
+                playbackService.resume(trackProgress.getProgress());
                 trackIsPaused = false;
             }
             else{
@@ -323,6 +355,7 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
         super.onDestroy();
         if  (broadcastIsRegistered){
             getActivity().unregisterReceiver(broadcastReceiver);
+            getActivity().unbindService(playbackConnection);
             broadcastIsRegistered = false;
         }
     }
@@ -333,7 +366,8 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
 
         if (fromUser) {
-            int seekPos = trackProgress.getProgress();
+            startDuration.setText(getTimeString(progress));
+            int seekPos = seekBar.getProgress();
             intent.putExtra("seekpos", seekPos);
             getActivity().sendBroadcast(intent);
         }
@@ -343,13 +377,18 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
 
     @Override
     public void onStartTrackingTouch(SeekBar seekBar) {
-
+        playbackService.pauseTrack();
+        playTrackBtn.setImageResource(android.R.drawable.ic_media_play);
     }
 
     @Override
     public void onStopTrackingTouch(SeekBar seekBar) {
-
+        if (!trackIsPaused) {
+            playbackService.resume(seekBar.getProgress());
+            playTrackBtn.setImageResource(android.R.drawable.ic_media_pause);
+        }
     }
+
 
 
     //Snippet from
