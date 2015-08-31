@@ -51,9 +51,8 @@ public class PlaybackService extends Service implements
 
     public static final String UPDATE_UI = "com.example.ranguro.spotifystreamer.services.UPDATE_UI";
     public static final String RESET_PLAY_BUTTON = "com.example.ranguro.spotifystreamer.services.RESET_PLAY_BUTTON";
-    public static final String RESTORE_SEEKBAR_AND_BUTTON = "com.example.ranguro.spotifystreamer.services.RESTORE_SEEKBAR_AND_BUTTON";
 
-    private boolean trackPaused = false;
+
 
 
     private String playingTrackUrl;
@@ -237,8 +236,6 @@ public class PlaybackService extends Service implements
                     if (mediaPlayer.getCurrentPosition() >= mediaPlayer.getDuration()){
                         mediaPlayer.seekTo(0);
                         mediaPlayer.start();
-                    }else{
-                        int x = 0;
                     }
                 }
             }
@@ -350,7 +347,6 @@ public class PlaybackService extends Service implements
 
     public void pauseTrack() {
         mediaPlayer.pause();
-        trackPaused = true;
     }
 
     @Override
