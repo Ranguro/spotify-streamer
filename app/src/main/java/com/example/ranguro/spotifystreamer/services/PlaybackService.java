@@ -68,7 +68,6 @@ public class PlaybackService extends Service implements
 
     private int playlistPosition;
 
-    private boolean isPaused = true;
     private Intent seekIntent;
     private int mediaMax;
     private int mediaPosition;
@@ -95,8 +94,6 @@ public class PlaybackService extends Service implements
             initMediaSessions();
         }
         handleMediaIntent(intent);
-
-        playTrack(intent.getStringExtra("preview_url"));
 
         setUpHandler();
 
@@ -216,30 +213,33 @@ public class PlaybackService extends Service implements
 
     public void playTrack(String previewUrl) {
 
-        //Track has changed different.
-        if (!previewUrl.equals(playingTrackUrl)) {
-            playingTrackUrl = previewUrl;
-            mediaPlayer.reset();
-            // Set up the MediaPlayer data source using the strAudioLink value
-            mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        //Track changed.
+        if(mediaPlayer != null){
+            if (!previewUrl.equals(playingTrackUrl)) {
+                playingTrackUrl = previewUrl;
+                mediaPlayer.reset();
+                // Set up the MediaPlayer data source using the strAudioLink value
+                mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
 
-            try {
-                mediaPlayer.setDataSource(getApplicationContext(), Uri.parse(playingTrackUrl));
-            } catch (Exception e) {
-                Log.e("MUSIC SERVICE", "Error setting data source", e);
-            }
-            mediaPlayer.prepareAsync();
-            mediaPlayer.setOnPreparedListener(this);
+                try {
+                    mediaPlayer.setDataSource(getApplicationContext(), Uri.parse(playingTrackUrl));
+                } catch (Exception e) {
+                    Log.e("MUSIC SERVICE", "Error setting data source", e);
+                }
+                mediaPlayer.prepareAsync();
+                mediaPlayer.setOnPreparedListener(this);
 
-        } else {
-            //Track has not changed.
-            if (!mediaPlayer.isPlaying()) {
+            } else {
+                //Track has not changed.
+                if (!mediaPlayer.isPlaying()) {
 
-
+                    if (mediaPlayer.getCurrentPosition() >= mediaPlayer.getDuration()){
+                        mediaPlayer.seekTo(0);
+                        mediaPlayer.start();
+                    }
+                }
             }
         }
-
-        setUpHandler();
     }
 
 
@@ -289,8 +289,9 @@ public class PlaybackService extends Service implements
 
     @Override
     public void onPrepared(MediaPlayer mp) {
-
-        mediaPlayer.start();
+        if(!mediaPlayer.isPlaying()) {
+            mediaPlayer.start();
+        }
     }
 
 

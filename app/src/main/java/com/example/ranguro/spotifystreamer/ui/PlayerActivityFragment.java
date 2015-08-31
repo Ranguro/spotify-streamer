@@ -48,7 +48,7 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
     }
 
     private boolean playbackBound = false;
-    private boolean trackPlaying = false;
+
 
     private ArrayList<ParcelableSpotifyTrack> spotifyTrackList;
 
@@ -96,9 +96,8 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
         playbackIntent.putExtra("preview_url", spotifyTrackList.get(currentPosition).previewUrl);
         getActivity().startService(playbackIntent);
         getActivity().bindService(playbackIntent, playbackConnection, Context.BIND_AUTO_CREATE);
-
-
     }
+
 
 
 
@@ -117,6 +116,8 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
 
+        outState.putBoolean("state",trackIsPaused);
+
         outState.putInt("track_progress", trackProgress.getProgress());
 
         outState.putInt("track_progress", trackProgress.getProgress());
@@ -133,13 +134,14 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
         public void onServiceConnected(ComponentName name, IBinder service) {
             PlaybackService.PlaybackBinder binder = (PlaybackService.PlaybackBinder)service;
             playbackService = binder.getService();
-            playbackService.playTrack(spotifyTrack.previewUrl);
             playbackBound = true;
             getActivity().registerReceiver(broadcastReceiver, new IntentFilter(
                     PlaybackService.UPDATE_UI));
             getActivity().registerReceiver(broadcastReceiver, new IntentFilter(
                     PlaybackService.RESET_PLAY_BUTTON));
+            playbackService.playTrack(spotifyTrackList.get(currentPosition).previewUrl);
             broadcastIsRegistered=true;
+
         }
 
         @Override
@@ -179,7 +181,14 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
         if (savedInstanceState != null){
             trackProgress.setProgress(savedInstanceState.getInt("track_progress"));
             startDuration.setText(savedInstanceState.getString("duration"));
+            trackIsPaused = savedInstanceState.getBoolean("state");
+            if (trackIsPaused){
+                playTrackBtn.setImageResource(android.R.drawable.ic_media_play);
+            }else{
+                playTrackBtn.setImageResource(android.R.drawable.ic_media_pause);
+            }
         }
+
 
 
         playPreviousTrackBtn.setOnClickListener(new View.OnClickListener() {
@@ -285,12 +294,25 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
         updatePlayerScreen();
         playbackService.setPosition(currentPosition);
         playbackService.playTrack(spotifyTrack.previewUrl);
+        trackIsPaused = false;
     }
 
 
 
     private void playStopTrack() {
         if (trackIsPaused){
+            if (trackProgress.getMax() == trackProgress.getProgress()){
+                playTrackBtn.setImageResource(android.R.drawable.ic_media_pause);
+                trackIsPaused = false;
+                if (!broadcastIsRegistered){
+                    getActivity().registerReceiver(broadcastReceiver, new IntentFilter(
+                            PlaybackService.UPDATE_UI));
+                    broadcastIsRegistered = true;
+                }
+                trackProgress.setProgress(0);
+                playbackService.playTrack(spotifyTrack.previewUrl);
+
+            }
             if (trackProgress.getProgress() != 0){
                 playTrackBtn.setImageResource(android.R.drawable.ic_media_pause);
                 playbackService.resume(trackProgress.getProgress());
@@ -317,7 +339,7 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
         if(currentPosition < spotifyTrackList.size()-1){
             currentPosition += 1;
         }
-        trackIsPaused = true;
+        trackIsPaused = false;
         playbackService.setPosition(currentPosition);
         updatePlayerScreen();
         playbackService.playTrack(spotifyTrack.previewUrl);
