@@ -94,10 +94,11 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
         playbackIntent.putParcelableArrayListExtra("playlist", spotifyTrackList);
         playbackIntent.putExtra("position", currentPosition);
         playbackIntent.putExtra("preview_url", spotifyTrackList.get(currentPosition).previewUrl);
-        getActivity().startService(playbackIntent);
+        if (!trackIsPaused) {
+            getActivity().startService(playbackIntent);
+        }
         getActivity().bindService(playbackIntent, playbackConnection, Context.BIND_AUTO_CREATE);
     }
-
 
 
 
