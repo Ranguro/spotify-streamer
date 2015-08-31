@@ -236,6 +236,8 @@ public class PlaybackService extends Service implements
                     if (mediaPlayer.getCurrentPosition() >= mediaPlayer.getDuration()){
                         mediaPlayer.seekTo(0);
                         mediaPlayer.start();
+                    }else{
+                        mediaPlayer.seekTo(mediaPlayer.getCurrentPosition());
                     }
                 }
             }

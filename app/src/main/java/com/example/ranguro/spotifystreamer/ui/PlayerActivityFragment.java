@@ -54,7 +54,7 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
 
     public static final String BROADCAST_SEEKBAR = "com.example.ranguro.spotifystreamer.sendseekbar";
 
-    private boolean trackIsPaused = true;
+    private boolean trackIsPaused = false;
     private int currentPosition;
 
     private TextView artistName;
@@ -110,18 +110,32 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
         }else{
             currentPosition = savedInstanceState.getInt("playlist_position");
         }
+
+        if(savedInstanceState != null) {
+            trackIsPaused = savedInstanceState.getBoolean("state");
+        }
+        playbackIntent = new Intent(getActivity(), PlaybackService.class);
+        playbackIntent.putParcelableArrayListExtra("playlist", spotifyTrackList);
+        playbackIntent.putExtra("position", currentPosition);
+        playbackIntent.putExtra("preview_url", spotifyTrackList.get(currentPosition).previewUrl);
+        if (!trackIsPaused) {
+            getActivity().startService(playbackIntent);
+        }
+        getActivity().bindService(playbackIntent, playbackConnection, Context.BIND_AUTO_CREATE);
+
+
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
 
-        outState.putBoolean("state",trackIsPaused);
-
-        outState.putInt("track_progress", trackProgress.getProgress());
+        outState.putBoolean("state", trackIsPaused);
 
         outState.putInt("track_progress", trackProgress.getProgress());
         outState.putInt("playlist_position", currentPosition);
+
+        outState.putInt("track_max_progress", trackProgress.getMax());
 
         outState.putString("duration", (String) startDuration.getText());
         outState.putString("duration", (String) startDuration.getText());
@@ -179,6 +193,7 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
         updatePlayerScreen();
 
         if (savedInstanceState != null){
+            trackProgress.setMax(savedInstanceState.getInt("track_max_progress"));
             trackProgress.setProgress(savedInstanceState.getInt("track_progress"));
             startDuration.setText(savedInstanceState.getString("duration"));
             trackIsPaused = savedInstanceState.getBoolean("state");
@@ -211,10 +226,6 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
                 playNextTrack();
             }
         });
-
-
-        trackIsPaused = false;
-        playTrackBtn.setImageResource(android.R.drawable.ic_media_pause);
 
 
         return rootView;
