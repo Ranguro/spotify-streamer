@@ -8,7 +8,6 @@ import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.session.MediaController;
@@ -23,7 +22,6 @@ import android.os.PowerManager;
 import android.util.Log;
 
 import com.example.ranguro.spotifystreamer.classes.ParcelableSpotifyTrack;
-import com.example.ranguro.spotifystreamer.ui.PlayerActivityFragment;
 
 import java.util.ArrayList;
 
@@ -50,9 +48,14 @@ public class PlaybackService extends Service implements
     private static final int NOTIFY_ID=1;
 
     private final Handler handler = new Handler();
-    public static final String BROADCAST_ACTION = "com.example.ranguro.spotifystreamer.seekprogress";
 
-    public static boolean trackEnded;
+    public static final String UPDATE_UI = "com.example.ranguro.spotifystreamer.services.UPDATE_UI";
+    public static final String RESET_PLAY_BUTTON = "com.example.ranguro.spotifystreamer.services.RESET_PLAY_BUTTON";
+
+    private boolean trackPaused = false;
+
+
+    private String playingTrackUrl;
 
     public static final String ACTION_PLAY = "action_play";
     public static final String ACTION_PAUSE = "action_pause";
@@ -75,11 +78,10 @@ public class PlaybackService extends Service implements
     public void onCreate() {
 
         super.onCreate();
-        seekIntent = new Intent(BROADCAST_ACTION);
+        seekIntent = new Intent(UPDATE_UI);
         mediaPlayer.setWakeMode(getApplicationContext(),
                 PowerManager.PARTIAL_WAKE_LOCK);
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-        mediaPlayer.setOnPreparedListener(this);
         mediaPlayer.setOnCompletionListener(this);
         mediaPlayer.setOnErrorListener(this);
 
@@ -89,21 +91,12 @@ public class PlaybackService extends Service implements
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-
-        if(!mediaPlayer.isPlaying()) {
-            if (mediaManager == null) {
-                initMediaSessions();
-            }
-            handleMediaIntent(intent);
-            //Register
-            registerReceiver(seekbarReceiver, new IntentFilter(PlayerActivityFragment.BROADCAST_SEEKBAR));
-
-
-            playlist = intent.getParcelableArrayListExtra("playlist");
-            playlistPosition = intent.getIntExtra("position", 0);
-
-            playTrack();
+        if (mediaManager == null) {
+            initMediaSessions();
         }
+        handleMediaIntent(intent);
+
+        playTrack(intent.getStringExtra("preview_url"));
 
         setUpHandler();
 
@@ -213,6 +206,7 @@ public class PlaybackService extends Service implements
         if(mediaPlayer.isPlaying()){
             mediaPosition = mediaPlayer.getCurrentPosition();
             mediaMax = mediaPlayer.getDuration();
+            seekIntent.setAction(UPDATE_UI);
             seekIntent.putExtra("media_max", String.valueOf(mediaMax));
             seekIntent.putExtra("counter", String.valueOf(mediaPosition));
             sendBroadcast(seekIntent);
@@ -220,25 +214,35 @@ public class PlaybackService extends Service implements
 
     }
 
-    public void playTrack(){
+    public void playTrack(String previewUrl) {
 
-        mediaPlayer.reset();
-
-
-        // Set up the MediaPlayer data source using the strAudioLink value
-        if (!mediaPlayer.isPlaying()) {
-            ParcelableSpotifyTrack track = playlist.get(playlistPosition);
+        //Track has changed different.
+        if (!previewUrl.equals(playingTrackUrl)) {
+            playingTrackUrl = previewUrl;
+            mediaPlayer.reset();
+            // Set up the MediaPlayer data source using the strAudioLink value
             mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
 
             try {
-                mediaPlayer.setDataSource(getApplicationContext(), Uri.parse(track.previewUrl));
+                mediaPlayer.setDataSource(getApplicationContext(), Uri.parse(playingTrackUrl));
             } catch (Exception e) {
                 Log.e("MUSIC SERVICE", "Error setting data source", e);
             }
             mediaPlayer.prepareAsync();
+            mediaPlayer.setOnPreparedListener(this);
+
+        } else {
+            //Track has not changed.
+            if (!mediaPlayer.isPlaying()) {
+
+
+            }
         }
+
         setUpHandler();
     }
+
+
 
     public void stopTrack()
     {
@@ -299,7 +303,6 @@ public class PlaybackService extends Service implements
             mediaPlayer.stop();
         }
         mediaPlayer.release();
-        unregisterReceiver(seekbarReceiver);
     }
 
     @Override
@@ -310,7 +313,9 @@ public class PlaybackService extends Service implements
 
     @Override
     public void onCompletion(MediaPlayer mediaPlayer) {
-        stopSelf();
+
+        Intent resetPlayButtonIntent = new Intent(RESET_PLAY_BUTTON);
+        sendBroadcast(resetPlayButtonIntent);
     }
 
     @Override
@@ -337,8 +342,11 @@ public class PlaybackService extends Service implements
         mediaPlayer.start();
     }
 
+
+
     public void pauseTrack() {
         mediaPlayer.pause();
+        trackPaused = true;
     }
 
     @Override
