@@ -9,25 +9,29 @@ import com.example.ranguro.spotifystreamer.R;
 
 public class PlayerActivity extends AppCompatActivity {
 
+    public static boolean twoPane;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_player);
 
+
         if(savedInstanceState == null) {
-//            Bundle args = new Bundle();
-//            args.putParcelableArrayList(PlayerActivityFragment.KEY_TRACK,
-//                    getIntent().getParcelableArrayListExtra(PlayerActivityFragment.KEY_TRACK));
-//
-//            args.putInt(PlayerActivityFragment.KEY_CURRENT_POSITION,
-//                    getIntent().getIntExtra(PlayerActivityFragment.KEY_CURRENT_POSITION,0));
-//
-//            PlayerActivityFragment fragment = new PlayerActivityFragment();
-//            fragment.setArguments(args);
-//
-//            getSupportFragmentManager().beginTransaction()
-//                    .add(R.id.track_player_container, fragment)
-//                    .commit();
+
+
+            Bundle args = new Bundle();
+            args.putParcelableArrayList(PlayerActivityFragment.KEY_TRACK,
+                    getIntent().getParcelableArrayListExtra(PlayerActivityFragment.KEY_TRACK));
+
+           args.putInt(PlayerActivityFragment.KEY_CURRENT_POSITION,
+                   getIntent().getIntExtra(PlayerActivityFragment.KEY_CURRENT_POSITION, 0));
+
+            PlayerActivityFragment fragment = new PlayerActivityFragment();
+            fragment.setArguments(args);
+            getFragmentManager().beginTransaction()
+                   .add(R.id.track_player_container, fragment)
+                   .commit();
         }
 
     }

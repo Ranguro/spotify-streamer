@@ -17,9 +17,11 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.ranguro.spotifystreamer.R;
 import com.example.ranguro.spotifystreamer.classes.ParcelableSpotifyTrack;
+import com.example.ranguro.spotifystreamer.classes.Utils;
 import com.example.ranguro.spotifystreamer.services.PlaybackService;
 import com.squareup.picasso.Picasso;
 
@@ -68,7 +70,6 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
     private ImageButton playTrackBtn;
     private ImageButton playNextTrackBtn;
     private ParcelableSpotifyTrack spotifyTrack;
-    private boolean trackEnded;
 
     public PlayerActivityFragment() {
 
@@ -305,7 +306,11 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
         }
         updatePlayerScreen();
         playbackService.setPosition(currentPosition);
-        playbackService.playTrack(spotifyTrack.previewUrl);
+        if (Utils.isNetworkAvailable(getActivity())) {
+            playbackService.playTrack(spotifyTrack.previewUrl);
+        }else{
+            Toast.makeText(getActivity(), R.string.toast_no_internet, Toast.LENGTH_SHORT).show();
+        }
         trackIsPaused = false;
     }
 
@@ -354,7 +359,11 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
         trackIsPaused = false;
         playbackService.setPosition(currentPosition);
         updatePlayerScreen();
-        playbackService.playTrack(spotifyTrack.previewUrl);
+        if (Utils.isNetworkAvailable(getActivity())) {
+            playbackService.playTrack(spotifyTrack.previewUrl);
+        }else{
+            Toast.makeText(getActivity(), R.string.toast_no_internet, Toast.LENGTH_SHORT).show();
+        }
     }
 
 

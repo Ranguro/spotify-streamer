@@ -1,6 +1,7 @@
 package com.example.ranguro.spotifystreamer.ui;
 
-import android.app.DialogFragment;
+import android.app.FragmentManager;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -87,8 +88,32 @@ public class TopTracksActivityFragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
 
-                DialogFragment fragment = PlayerActivityFragment.newInstance(artistTracks, position);
-                fragment.show(getActivity().getFragmentManager(),"");
+                if (Utils.isNetworkAvailable(getActivity())) {
+
+                    FragmentManager fragmentManager = getActivity().getFragmentManager();
+                    PlayerActivityFragment newFragment = new PlayerActivityFragment().newInstance(artistTracks, position);
+
+                    if (getResources().getBoolean(R.bool.has_two_panes)) {;
+                        newFragment.show(fragmentManager, "dialog");
+                    } else {
+
+                        Intent topTracksIntent = new Intent(getActivity(), PlayerActivity.class);
+
+                        Bundle args = new Bundle();
+                        args.putParcelableArrayList(PlayerActivityFragment.KEY_TRACK, artistTracks);
+                        args.putInt(PlayerActivityFragment.KEY_CURRENT_POSITION, position);
+
+                        topTracksIntent.putExtras(args);
+                        startActivity(topTracksIntent);
+
+//                        android.app.FragmentTransaction transaction = fragmentManager.beginTransaction();
+//                        transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+//                        transaction.add(android.R.id.content, newFragment).addToBackStack(null).commit();
+                    }
+                }else{
+                    Toast.makeText(getActivity(), R.string.toast_no_internet, Toast.LENGTH_SHORT).show();
+                }
+
             }
         });
 

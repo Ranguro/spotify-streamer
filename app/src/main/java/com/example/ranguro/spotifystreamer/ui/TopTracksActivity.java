@@ -1,14 +1,16 @@
 package com.example.ranguro.spotifystreamer.ui;
 
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 
 import com.example.ranguro.spotifystreamer.R;
+import com.example.ranguro.spotifystreamer.classes.ParcelableSpotifyArtist;
 
 
-public class TopTracksActivity extends ActionBarActivity {
+public class TopTracksActivity extends AppCompatActivity {
 
 
     public static final String ARTIST_ID_KEY = "artist_id";
@@ -22,9 +24,15 @@ public class TopTracksActivity extends ActionBarActivity {
 
         if(savedInstanceState == null){
 
+            ParcelableSpotifyArtist artist = getIntent().getParcelableExtra(TopTracksActivityFragment.KEY_ARTIST);
+
+            ActionBar ab = getSupportActionBar();
+            ab.setSubtitle(artist.name);
+            ab.setDisplayHomeAsUpEnabled(true);
+
             Bundle args = new Bundle();
             args.putParcelable(TopTracksActivityFragment.KEY_ARTIST,
-                    getIntent().getParcelableExtra(TopTracksActivityFragment.KEY_ARTIST));
+                    artist);
 
             TopTracksActivityFragment fragment = new TopTracksActivityFragment();
             fragment.setArguments(args);
@@ -34,10 +42,6 @@ public class TopTracksActivity extends ActionBarActivity {
                     .commit();
         }
 
-        android.support.v7.app.ActionBar ab = getSupportActionBar();
-        String artistName = getIntent().getExtras().getString("ARTIST_NAME");
-        ab.setSubtitle(artistName);
-        ab.setDisplayHomeAsUpEnabled(true);
 
     }
 
