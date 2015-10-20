@@ -46,9 +46,8 @@ public class SpotifyArtistAdapter extends ArrayAdapter<ParcelableSpotifyArtist> 
 
         if (!spotifyArtist.imageUrl.isEmpty()) {
             Picasso.with(getContext()).load(spotifyArtist.imageUrl).resize(200, 200).into(holder.artistImage);
-        }
-        else{
-            //Add default image.
+        }else{
+            Picasso.with(getContext()).load(R.drawable.default_image).into(holder.artistImage);
         }
         holder.artistName.setText(spotifyArtist.name);
 

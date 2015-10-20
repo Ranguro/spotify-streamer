@@ -51,6 +51,8 @@ public class SpotifyTrackAdapter extends ArrayAdapter<ParcelableSpotifyTrack> {
         holder.albumName.setText(spotifyTrack.albumName);
         if (!spotifyTrack.albumImageUrl.isEmpty()){
             Picasso.with(getContext()).load(spotifyTrack.albumImageUrl).resize(200, 200).into(holder.albumImage);
+        }else{
+            Picasso.with(getContext()).load(R.drawable.default_image).into(holder.albumImage);
         }
 
         return convertView;
