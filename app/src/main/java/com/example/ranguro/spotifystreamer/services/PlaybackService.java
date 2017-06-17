@@ -25,6 +25,8 @@ import com.example.ranguro.spotifystreamer.classes.ParcelableSpotifyTrack;
 
 import java.util.ArrayList;
 
+import static android.content.ContentValues.TAG;
+
 /**
  * Created by Randall on 15/08/2015.
  */
@@ -91,6 +93,7 @@ public class PlaybackService extends Service implements
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (mediaManager == null) {
+            Log.d(TAG, "onStartCommand: ");
             initMediaSessions();
         }
         handleMediaIntent(intent);
@@ -108,7 +111,6 @@ public class PlaybackService extends Service implements
             @Override
             public void onPlay() {
                 super.onPlay();
-                //mediaPlayer.start();
                 buildNotification(generateAction(android.R.drawable.ic_media_pause, "Pause", ACTION_PAUSE));
             }
 
@@ -211,31 +213,33 @@ public class PlaybackService extends Service implements
 
     }
 
+    public void startMediaPlayer(String previewUrl){
+        playingTrackUrl = previewUrl;
+        mediaPlayer.reset();
+        // Set up the MediaPlayer data source using the strAudioLink value
+        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+
+        try {
+            mediaPlayer.setDataSource(getApplicationContext(), Uri.parse(playingTrackUrl));
+        } catch (Exception e) {
+            Log.e("MUSIC SERVICE", "Error setting data source", e);
+        }
+        mediaPlayer.prepareAsync();
+        mediaPlayer.setOnPreparedListener(this);
+    }
+
     public void playTrack(String previewUrl) {
 
         //Track changed.
         if(mediaPlayer != null){
             if (!previewUrl.equals(playingTrackUrl)) {
-                playingTrackUrl = previewUrl;
-                mediaPlayer.reset();
-                // Set up the MediaPlayer data source using the strAudioLink value
-                mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-
-                try {
-                    mediaPlayer.setDataSource(getApplicationContext(), Uri.parse(playingTrackUrl));
-                } catch (Exception e) {
-                    Log.e("MUSIC SERVICE", "Error setting data source", e);
-                }
-                mediaPlayer.prepareAsync();
-                mediaPlayer.setOnPreparedListener(this);
-
+                startMediaPlayer(previewUrl);
             } else {
                 //Track has not changed.
                 if (!mediaPlayer.isPlaying()) {
 
                     if (mediaPlayer.getCurrentPosition() >= mediaPlayer.getDuration()){
-                        mediaPlayer.seekTo(0);
-                        mediaPlayer.start();
+                        resume(0);
                     }
                 }
             }
@@ -267,6 +271,7 @@ public class PlaybackService extends Service implements
     // Update seek position from Activity
     public void updateSeekPos(Intent intent) {
         int seekPos = intent.getIntExtra("seekpos", 0);
+        System.out.println("Pos: " + seekPos);
         if (mediaPlayer.isPlaying()) {
             handler.removeCallbacks(sendUpdatesToUI);
             mediaPlayer.seekTo(seekPos);

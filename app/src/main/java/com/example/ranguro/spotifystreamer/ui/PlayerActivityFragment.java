@@ -10,6 +10,7 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,6 +27,8 @@ import com.example.ranguro.spotifystreamer.services.PlaybackService;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
+
+import static android.content.ContentValues.TAG;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -307,7 +310,7 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
         updatePlayerScreen();
         playbackService.setPosition(currentPosition);
         if (Utils.isNetworkAvailable(getActivity())) {
-            playbackService.playTrack(spotifyTrack.previewUrl);
+            playbackService.startMediaPlayer(spotifyTrack.previewUrl);
         }else{
             Toast.makeText(getActivity(), R.string.toast_no_internet, Toast.LENGTH_SHORT).show();
         }
@@ -360,7 +363,7 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
         playbackService.setPosition(currentPosition);
         updatePlayerScreen();
         if (Utils.isNetworkAvailable(getActivity())) {
-            playbackService.playTrack(spotifyTrack.previewUrl);
+            playbackService.startMediaPlayer(spotifyTrack.previewUrl);
         }else{
             Toast.makeText(getActivity(), R.string.toast_no_internet, Toast.LENGTH_SHORT).show();
         }
@@ -372,8 +375,11 @@ public class PlayerActivityFragment extends DialogFragment implements SeekBar.On
     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
 
         if (fromUser) {
+            Log.d(TAG, "onProgressChanged: " + getTimeString(progress));
             startDuration.setText(getTimeString(progress));
+            Log.d(TAG, "onProgressChanged: " + progress);
             int seekPos = seekBar.getProgress();
+
             intent.putExtra("seekpos", seekPos);
             getActivity().sendBroadcast(intent);
         }
